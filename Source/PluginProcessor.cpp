@@ -95,7 +95,7 @@ void DopoDelayAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    auto delayBufferSize = sampleRate * 2.0;
+    auto delayBufferSize = sampleRate * 3.0;  // 3 seconds buffer
     delayBuffer.setSize(getTotalNumOutputChannels(), (int)delayBufferSize);
 }
 
@@ -152,7 +152,6 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         auto gain = 1.0f;
         // writePositin = where is the audio
         // readPosition = where we read from the past
-        auto delaySeconds = 0.2;  // 200ms delay
         auto readPosition = writePosition - getSampleRate() * delaySeconds;
 
         if (readPosition < 0)

@@ -56,9 +56,10 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    double delaySeconds; 
+
 private:
     void DopoDelayAudioProcessor::fillDelayBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData);
-
     juce::AudioBuffer<float> delayBuffer;
     int writePosition{ 0 };
 
