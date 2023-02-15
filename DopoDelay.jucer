@@ -2,9 +2,9 @@
 
 <JUCERPROJECT id="vZMwUx" name="DopoDelay" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="0" jucerFormatVersion="1"
-              pluginFormats="buildStandalone,buildVST3" pluginVST3Category="Tools"
+              pluginFormats="buildStandalone,buildVST,buildVST3" pluginVST3Category="Tools"
               cppLanguageStandard="17" pluginManufacturer="FreshAudio" bundleIdentifier="com.freshaudio.DopoDelay"
-              aaxIdentifier="com.freshaudio.DopoDelay">
+              aaxIdentifier="com.freshaudio.DopoDelay" headerPath="C:\dev\vst-sdk2.4\">
   <MAINGROUP id="EfIgsM" name="DopoDelay">
     <GROUP id="{A94AAC7E-66A2-E9F1-0D57-227DEEC4397F}" name="Source">
       <FILE id="ItF8OW" name="PluginProcessor.cpp" compile="1" resource="0"
