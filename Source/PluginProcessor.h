@@ -1,7 +1,7 @@
  /*
   ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+    JUCE Processor of the DopoDelay plugin.
 
   ==============================================================================
 */
@@ -10,14 +10,23 @@
 
 #include <JuceHeader.h>
 
-//==============================================================================
+
 class DopoDelayAudioProcessor  : public juce::AudioProcessor
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
 {
 public:
-    //double delaySeconds;
+    const juce::String PLUGIN_ID = "DopoDelay";
+
+    const juce::String PARAM_DELAY_SECONDS_ID = "delaySeconds";
+    const juce::String PARAM_DELAY_SECONDS_NAME = "Delay Seconds";
+    const float PARAM_DELAY_SECONDS_MIN = 0.0f;
+    const float PARAM_DELAY_SECONDS_MAX = 2.95f;
+    const float PARAM_DELAY_SECONDS_DEFAULT = 0.2f;
+
+    const float GAIN_DEFAULT = 1.0f;
+
     juce::AudioProcessorValueTreeState treeState;
 
     //==============================================================================

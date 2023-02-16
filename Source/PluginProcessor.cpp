@@ -1,7 +1,7 @@
  /*
   ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+    JUCE Processor of the DopoDelay plugin.
 
   ==============================================================================
 */
@@ -9,7 +9,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//==============================================================================
+
 DopoDelayAudioProcessor::DopoDelayAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
@@ -19,11 +19,11 @@ DopoDelayAudioProcessor::DopoDelayAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       ), treeState(*this, nullptr, juce::Identifier("DopoDelay"), createParameters())
+                       ), treeState(*this, nullptr, juce::Identifier(PLUGIN_ID), createParameters())
 #endif
 {
     // Initialize the pointer to the delaySeconds parameter
-    delaySecondsPtr = treeState.getRawParameterValue("delaySeconds");
+    delaySecondsPtr = treeState.getRawParameterValue(PARAM_DELAY_SECONDS_ID);
 }
 
 DopoDelayAudioProcessor::~DopoDelayAudioProcessor()
@@ -95,7 +95,7 @@ void DopoDelayAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void DopoDelayAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback initialization that you need..
+    // Use this method to do any pre-playback initialization that you need..
     auto delayBufferSize = sampleRate * 3.0;  // 3 seconds buffer
     delayBuffer.setSize(getTotalNumOutputChannels(), (int)delayBufferSize);
 }
@@ -141,6 +141,7 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+
     auto bufferSize = buffer.getNumSamples();
     auto delayBufferSize = delayBuffer.getNumSamples();
 
@@ -150,9 +151,8 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
         fillDelayBuffer(channel, bufferSize, delayBufferSize, channelData);
 
-        auto gain = 1.0f;
-        // writePosition = where is the audio
-        // readPosition = where we read from the past
+        // writePosition = current position in the delayBuffer
+        // readPosition = where we read from the past in the delayBuffer
         auto readPosition = writePosition - getSampleRate() * *delaySecondsPtr;
 
         if (readPosition < 0)
@@ -160,43 +160,19 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         
         if (readPosition + bufferSize < delayBufferSize)
         {
-            buffer.copyFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, gain, gain);
+            buffer.copyFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, GAIN_DEFAULT, GAIN_DEFAULT);
         }
         else
         {
             auto numSamplesToEnd = delayBufferSize - readPosition;
             auto numSamplesAtStart = bufferSize - numSamplesToEnd;
-            buffer.copyFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, gain, gain);
-            buffer.copyFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, gain, gain);
+            buffer.copyFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, GAIN_DEFAULT, GAIN_DEFAULT);
+            buffer.copyFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, GAIN_DEFAULT, GAIN_DEFAULT);
         }
     }
 
     writePosition += bufferSize;   
     writePosition %= delayBufferSize;
-}
-
-void DopoDelayAudioProcessor::fillDelayBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData)
-{
-    auto gain = 1.0f;
-
-    // Check to see if main buffer copies to delay buffer without needing to wrap
-    if (delayBufferSize > bufferSize + writePosition)
-    {
-        // Copy the main buffer to the delay buffer
-        delayBuffer.copyFromWithRamp(channel, writePosition, channelData, bufferSize, gain, gain);
-    }
-    else
-    {
-        // Determine the space left at the end of the delay buffer
-        auto numSamplesToEnd = delayBufferSize - writePosition;
-        auto numSamplesAtStart = bufferSize - numSamplesToEnd;
-
-        // Copy the starting of the main buffer at the en\d of the delay buffer
-        delayBuffer.copyFromWithRamp(channel, writePosition, channelData, numSamplesToEnd, gain, gain);
-
-        // Copy the end of the main buffer at the beginning of the delay buffer
-        delayBuffer.copyFromWithRamp(channel, 0, channelData, numSamplesAtStart, gain, gain);
-    }
 }
 
 //==============================================================================
@@ -243,13 +219,35 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 
 
+void DopoDelayAudioProcessor::fillDelayBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData)
+{
+    // Check to see if main buffer copies to delay buffer without needing to wrap
+    if (delayBufferSize > bufferSize + writePosition)
+    {
+        // Copy the main buffer to the delay buffer
+        delayBuffer.copyFromWithRamp(channel, writePosition, channelData, bufferSize, GAIN_DEFAULT, GAIN_DEFAULT);
+    }
+    else
+    {
+        // Determine the space left at the end of the delay buffer
+        auto numSamplesToEnd = delayBufferSize - writePosition;
+        auto numSamplesAtStart = bufferSize - numSamplesToEnd;
+
+        // Copy the starting of the main buffer at the en\d of the delay buffer
+        delayBuffer.copyFromWithRamp(channel, writePosition, channelData, numSamplesToEnd, GAIN_DEFAULT, GAIN_DEFAULT);
+
+        // Copy the end of the main buffer at the beginning of the delay buffer
+        delayBuffer.copyFromWithRamp(channel, 0, channelData, numSamplesAtStart, GAIN_DEFAULT, GAIN_DEFAULT);
+    }
+}
+
 juce::AudioProcessorValueTreeState::ParameterLayout DopoDelayAudioProcessor::createParameters()
 {
     // Create a vector of parameters
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
     
     // Create the delaySeconds parameter
-    params.push_back(std::make_unique<juce::AudioParameterFloat>("delaySeconds", "Delay Seconds", 0.0f, 2.95f, 0.2f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(PARAM_DELAY_SECONDS_ID, PARAM_DELAY_SECONDS_NAME, PARAM_DELAY_SECONDS_MIN, PARAM_DELAY_SECONDS_MAX, PARAM_DELAY_SECONDS_DEFAULT));
 
     return { params.begin(), params.end() };
 }

@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin editor.
+    JUCE Editor of the DopoDelay plugin.
 
   ==============================================================================
 */
@@ -9,17 +9,18 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//==============================================================================
+
+
 DopoDelayAudioProcessorEditor::DopoDelayAudioProcessorEditor (DopoDelayAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setSize(400, 70);
 
-    // Attach the slider to the state's delaySeconds parameter
-    delaySliderAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.treeState, "delaySeconds", delaySlider);
+    // Attach the slider to the treeState's delaySeconds parameter
+    delaySliderAttachment = std::make_unique<SliderAttachment>(audioProcessor.treeState, audioProcessor.PARAM_DELAY_SECONDS_ID, delaySlider);
     delaySlider.setTextValueSuffix(" s");
     addAndMakeVisible(delaySlider);
-
+    
     delayLabel.setText("Delay", juce::dontSendNotification);
     delayLabel.attachToComponent(&delaySlider, true);
     addAndMakeVisible(delayLabel);  
@@ -38,7 +39,7 @@ void DopoDelayAudioProcessorEditor::paint (juce::Graphics& g)
 
 void DopoDelayAudioProcessorEditor::resized()
 {
-    // This is generally where you'll want to lay out the positions of any subcomponents in your editor..
+    // Lay out the positions of any subcomponents
     auto margin = 24;
     auto labelWidth = 36;
     delaySlider.setBounds(margin + labelWidth, margin, getWidth() - 2 * margin - labelWidth, 20);
