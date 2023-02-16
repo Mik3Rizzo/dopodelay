@@ -19,9 +19,11 @@ DopoDelayAudioProcessor::DopoDelayAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ), treeState(*this, nullptr, juce::Identifier("DopoDelay"), createParameters())
 #endif
 {
+    // Initialize the pointer to the delaySeconds parameter
+    delaySecondsPtr = treeState.getRawParameterValue("delaySeconds");
 }
 
 DopoDelayAudioProcessor::~DopoDelayAudioProcessor()
@@ -93,8 +95,7 @@ void DopoDelayAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void DopoDelayAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    // Use this method as the place to do any pre-playback initialization that you need..
     auto delayBufferSize = sampleRate * 3.0;  // 3 seconds buffer
     delayBuffer.setSize(getTotalNumOutputChannels(), (int)delayBufferSize);
 }
@@ -150,9 +151,9 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         fillDelayBuffer(channel, bufferSize, delayBufferSize, channelData);
 
         auto gain = 1.0f;
-        // writePositin = where is the audio
+        // writePosition = where is the audio
         // readPosition = where we read from the past
-        auto readPosition = writePosition - getSampleRate() * delaySeconds;
+        auto readPosition = writePosition - getSampleRate() * *delaySecondsPtr;
 
         if (readPosition < 0)
             readPosition += delayBufferSize;
@@ -168,7 +169,6 @@ void DopoDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             buffer.copyFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, gain, gain);
             buffer.copyFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, gain, gain);
         }
-
     }
 
     writePosition += bufferSize;   
@@ -216,12 +216,22 @@ void DopoDelayAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+
+    auto currentState = treeState.copyState();
+    std::unique_ptr<juce::XmlElement> xml(currentState.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
 void DopoDelayAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+
+    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName(treeState.state.getType()))
+            treeState.replaceState(juce::ValueTree::fromXml(*xmlState));
 }
 
 //==============================================================================
@@ -229,4 +239,17 @@ void DopoDelayAudioProcessor::setStateInformation (const void* data, int sizeInB
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new DopoDelayAudioProcessor();
+}
+
+
+
+juce::AudioProcessorValueTreeState::ParameterLayout DopoDelayAudioProcessor::createParameters()
+{
+    // Create a vector of parameters
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+    
+    // Create the delaySeconds parameter
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("delaySeconds", "Delay Seconds", 0.0f, 2.95f, 0.2f));
+
+    return { params.begin(), params.end() };
 }

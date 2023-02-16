@@ -11,14 +11,15 @@
 #include <JuceHeader.h>
 
 //==============================================================================
-/**
-*/
 class DopoDelayAudioProcessor  : public juce::AudioProcessor
                             #if JucePlugin_Enable_ARA
                              , public juce::AudioProcessorARAExtension
                             #endif
 {
 public:
+    //double delaySeconds;
+    juce::AudioProcessorValueTreeState treeState;
+
     //==============================================================================
     DopoDelayAudioProcessor();
     ~DopoDelayAudioProcessor() override;
@@ -55,13 +56,16 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-
-    double delaySeconds; 
-
+ 
 private:
-    void DopoDelayAudioProcessor::fillDelayBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData);
     juce::AudioBuffer<float> delayBuffer;
     int writePosition{ 0 };
+
+    std::atomic<float>* delaySecondsPtr = nullptr;
+
+    void DopoDelayAudioProcessor::fillDelayBuffer(int channel, int bufferSize, int delayBufferSize, float* channelData);
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
+    
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DopoDelayAudioProcessor)

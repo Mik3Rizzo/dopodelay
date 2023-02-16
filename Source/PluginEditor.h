@@ -12,10 +12,7 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-/**
-*/
-class DopoDelayAudioProcessorEditor  : public juce::AudioProcessorEditor, 
-                                       public juce::Slider::Listener 
+class DopoDelayAudioProcessorEditor  : public juce::AudioProcessorEditor                                      
 {
 public:
     DopoDelayAudioProcessorEditor (DopoDelayAudioProcessor&);
@@ -25,16 +22,14 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-
-    void sliderValueChanged(juce::Slider* slider) override;
-
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
+    // This reference is provided as a quick way for your editor to access the processor object that created it.
     DopoDelayAudioProcessor& audioProcessor;
 
     juce::Slider delaySlider;
     juce::Label  delayLabel;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delaySliderAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DopoDelayAudioProcessorEditor)
 };
